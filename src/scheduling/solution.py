@@ -4,132 +4,110 @@ Object containing the solution to the optimization problem.
 @author: Vassilissa Lehoux
 '''
 from typing import List
-from matplotlib import pyplot as plt
 from src.scheduling.instance.instance import Instance
 from src.scheduling.instance.operation import Operation
 
-from matplotlib import colormaps
 from src.scheduling.instance.machine import Machine
-
+from matplotlib import pyplot as plt
+from matplotlib import colormaps
 
 class Solution(object):
-    '''
-    Solution class
-    '''
-
     def __init__(self, instance: Instance):
-        '''
-        Constructor
-        '''
-        raise "Not implemented error"
-
+        self._instance = instance
+        for op in self._instance.operations:
+            op.reset()
+        for m in self._instance.machines:
+            m.reset()
 
     @property
-    def inst(self):
-        '''
-        Returns the associated instance
-        '''
-        raise "Not implemented error"
-
+    def inst(self) -> Instance:
+        return self._instance
 
     def reset(self):
-        '''
-        Resets the solution: everything needs to be replanned
-        '''
-        raise "Not implemented error"
+        for op in self._instance.operations:
+            op.reset()
+        for m in self._instance.machines:
+            m.reset()
 
     @property
     def is_feasible(self) -> bool:
-        '''
-        Returns True if the solution respects the constraints.
-        To call this function, all the operations must be planned.
-        '''
-        raise "Not implemented error"
+        return all(op.assigned for op in self._instance.operations)
 
     @property
     def evaluate(self) -> int:
-        '''
-        Computes the value of the solution
-        '''
-        raise "Not implemented error"
+        if not self.is_feasible:
+            raise Exception("Solution is not feasible")
+        return self.objective
 
     @property
     def objective(self) -> int:
-        '''
-        Returns the value of the objective function
-        '''
-        raise "Not implemented error"
+        if not self.is_feasible:
+            raise Exception("Solution is not feasible")
+        total = 0
+        for job in self._instance.jobs:
+            total += job.completion_time
+        return total
 
     @property
     def cmax(self) -> int:
-        '''
-        Returns the maximum completion time of a job
-        '''
-        raise "Not implemented error"
+        if not self.is_feasible:
+            raise Exception("Solution is not feasible")
+        return max(job.completion_time for job in self._instance.jobs)
 
     @property
     def sum_ci(self) -> int:
-        '''
-        Returns the sum of completion times of all the jobs
-        '''
-        raise "Not implemented error"
+        return self.objective
 
     @property
     def total_energy_consumption(self) -> int:
-        '''
-        Returns the total energy consumption for processing
-        all the jobs (including energy for machine switched on but doing nothing).
-        '''
-        raise "Not implemented error"
+        if not self.is_feasible:
+            raise Exception("Solution is not feasible")
+        return sum(m.total_energy_consumption for m in self._instance.machines)
 
     def __str__(self) -> str:
-        '''
-        String representation of the solution
-        '''
         return ""
 
     def to_csv(self):
-        '''
-        Save the solution to a csv files with the following formats:
-        Operation file:
-          One line per operation
-          operation id - machine to which it is assigned - start time
-          header: "operation_id,machine_id,start_time"
-        Machine file:
-          One line per pair of (start time, stop time) for the machine
-          header: "machine_id, start_time, stop_time"
-        '''
-        raise "Not implemented error"
+        raise NotImplementedError
 
     def from_csv(self, inst_folder, operation_file, machine_file):
-        '''
-        Reads a solution from the instance folder
-        '''
-        raise "Not implemented error"
+        raise NotImplementedError
 
     @property
-    def available_operations(self)-> List[Operation]:
-        '''
-        Returns the available operations for scheduling:
-        all constraints have been met for those operations to start
-        '''
-        raise "Not implemented error"
+    def available_operations(self) -> List[Operation]:
+        avail = []
+        for op in self._instance.operations:
+            if not op.assigned:
+                ready = True
+                for pred in op.predecessors:
+                    if not pred.assigned:
+                        ready = False
+                        break
+                if ready:
+                    avail.append(op)
+        return avail
 
     @property
     def all_operations(self) -> List[Operation]:
-        '''
-        Returns all the operations in the instance
-        '''
-        raise "Not implemented error"
+        return self._instance.operations.copy()
 
     def schedule(self, operation: Operation, machine: Machine):
-        '''
-        Schedules the operation at the end of the planning of the machine.
-        Starts the machine if stopped.
-        @param operation: an operation that is available for scheduling
-        '''
-        assert(operation in self.available_operations)
-        raise "Not implemented error"
+        assert operation in self.available_operations
+        earliest = operation.min_start_time
+
+        if not machine.start_times:
+            machine.add_operation(operation, earliest)
+            machine._stop_times.append(machine._end_time)
+            machine._current_energy += machine._tear_down_energy
+            return
+
+        if machine.stop_times and machine.stop_times[-1] > machine.available_time:
+            machine._stop_times.pop()
+
+        machine.add_operation(operation, max(earliest, machine.available_time))
+        machine._stop_times.append(machine._end_time)
+        machine._current_energy += machine._tear_down_energy
+
 
     def gantt(self, colormapname):
         """

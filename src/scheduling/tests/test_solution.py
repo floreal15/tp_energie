@@ -78,17 +78,41 @@ class TestSolution(unittest.TestCase):
         plt = sol.gantt('tab20')
         plt.savefig(TEST_FOLDER + os.path.sep +  'temp.png')
 
-        def test_objective(self):
-            '''
-            Test your objective function
-            '''
-            pass
+    def test_objective(self):
+        sol = Solution(self.inst1)
+        # Before any scheduling, objective should be zero or raise because not feasible
+        with self.assertRaises(Exception):
+            _ = sol.objective
 
-        def test_evaluate(self):
-            '''
-            Test your evaluate function
-            '''
-            pass
+        # Schedule all operations greedily
+        while sol.available_operations:
+            op = sol.available_operations[0]
+            # find a compatible machine
+            for m in self.inst1.machines:
+                if m.machine_id in op._machine_info:
+                    sol.schedule(op, m)
+                    break
+
+        # Now that all operations are scheduled, objective should be an integer > 0
+        obj = sol.objective
+        self.assertIsInstance(obj, int, "Objective should be integer")
+        self.assertGreater(obj, 0, "Objective should be positive after full schedule")
+
+    def test_evaluate(self):
+        sol = Solution(self.inst1)
+        # Evaluate should mirror objective once feasible
+        # Schedule all operations
+        while sol.available_operations:
+            op = sol.available_operations[0]
+            for m in self.inst1.machines:
+                if m.machine_id in op._machine_info:
+                    sol.schedule(op, m)
+                    break
+
+        val_eval = sol.evaluate
+        val_obj = sol.objective
+        self.assertEqual(val_eval, val_obj, "evaluate and objective must match")
+        self.assertIsInstance(val_eval, int, "evaluate should return an integer")
 
 
 if __name__ == "__main__":
