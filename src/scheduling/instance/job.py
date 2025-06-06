@@ -15,68 +15,48 @@ class Job(object):
     '''
 
     def __init__(self, job_id: int):
-        '''
-        Constructor
-        '''
-        raise "Not implemented error"
-        
+        self._job_id = job_id
+        self._operations: List[Operation] = []
+        self._next_op_idx = 0
+
     @property
     def job_id(self) -> int:
-        '''
-        Returns the id of the job.
-        '''
-        raise "Not implemented error"
+        return self._job_id
 
     def reset(self):
-        '''
-        Resets the planned operations
-        '''
-        raise "Not implemented error"
+        for op in self._operations:
+            op.reset()
+        self._next_op_idx = 0
 
     @property
     def operations(self) -> List[Operation]:
-        '''
-        Returns a list of operations for the job
-        '''
-        raise "Not implemented error"
+        return self._operations.copy()
 
     @property
     def next_operation(self) -> Operation:
-        '''
-        Returns the next operation to be scheduled
-        '''
-        raise "Not implemented error"
+        if self.planned:
+            raise AttributeError("Pas d'opération suivante")
+        return self._operations[self._next_op_idx]
 
     def schedule_operation(self):
-        '''
-        Updates the next_operation to schedule
-        '''
-        raise "Not implemented error"
+        if not self.planned:
+            self._next_op_idx += 1
 
     @property
-    def planned(self):
-        '''
-        Returns true if all operations are planned
-        '''
-        raise "Not implemented error"
+    def planned(self) -> bool:
+        return self._next_op_idx >= len(self._operations)
 
     @property
     def operation_nb(self) -> int:
-        '''
-        Returns the nb of operations of the job
-        '''
-        raise "Not implemented error"
+        return len(self._operations)
 
     def add_operation(self, operation: Operation):
-        '''
-        Adds an operation to the job at the end of the operation list,
-        adds the precedence constraints between job operations.
-        '''
-        raise "Not implemented error"
+        if self._operations:
+            precedent = self._operations[-1]
+            operation.add_predecessor(precedent)
+        self._operations.append(operation)
 
     @property
     def completion_time(self) -> int:
-        '''
-        Returns the job's completion time
-        '''
-        raise "Not implemented error"
+        fins = [op.end_time for op in self._operations if op.assigned]
+        return max(fins) if fins else 0
