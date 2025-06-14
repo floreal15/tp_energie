@@ -31,7 +31,13 @@ class Solution(object):
 
     @property
     def is_feasible(self) -> bool:
-        return all(op.assigned for op in self._instance.operations)
+        if not all(op.assigned for op in self._instance.operations):
+            return False
+        for machine in self._instance.machines:
+            for op in machine.scheduled_operations:
+                if op.end_time > machine._end_time:
+                    return False
+        return True
 
     @property
     def evaluate(self) -> int:
@@ -43,7 +49,7 @@ class Solution(object):
     def objective(self) -> int:
         if not self.is_feasible:
             raise Exception("Solution is not feasible")
-        total = 0
+        total = self.total_energy_consumption*2
         for job in self._instance.jobs:
             total += job.completion_time
         return total
@@ -101,13 +107,33 @@ class Solution(object):
             machine._current_energy += machine._tear_down_energy
             return
 
-        if machine.stop_times and machine.stop_times[-1] > machine.available_time:
+        if machine.stop_times:
+            machine._current_energy -= machine._tear_down_energy
             machine._stop_times.pop()
 
-        machine.add_operation(operation, max(earliest, machine.available_time))
+        last_op = machine.scheduled_operations[-1] if machine.scheduled_operations else None
+        last_op_end = last_op.end_time if last_op else 0
+        new_op_start = max(earliest, machine.available_time)
+        tear_down_and_up_time = machine.tear_down_time+machine.set_up_time
+
+        # Check if there is a gap between last operation and new operation
+        if last_op and new_op_start >= last_op_end+tear_down_and_up_time:
+            idle_time = new_op_start - last_op_end
+            idle_cost = idle_time * machine._min_consumption
+            stop_start_cost = machine._tear_down_energy + machine._set_up_energy
+            # If it's better to stop and restart
+            if idle_cost > stop_start_cost:
+                # Stop after last operation
+                machine._stop_times.append(last_op_end)
+                machine._current_energy += machine._tear_down_energy
+                # Start before new operation
+                machine._start_times.append(new_op_start - machine._set_up_time)
+                machine._current_energy += machine._set_up_energy
+                new_op_start = new_op_start  # already correct
+
+        machine.add_operation(operation, new_op_start)
         machine._stop_times.append(machine._end_time)
         machine._current_energy += machine._tear_down_energy
-
 
     def gantt(self, colormapname):
         """

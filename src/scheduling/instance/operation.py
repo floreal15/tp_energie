@@ -164,14 +164,14 @@ class Operation(object):
         '''
         if machine_id not in self._machine_info:
             return False
-            
+
         if check_success:
             # Check precedence constraints
             if not self.is_ready(at_time):
                 return False
-                
+
             # Check machine availability would be handled at a higher level
-        
+
         duration, energy = self._machine_info[machine_id]
         self._schedule_info = OperationScheduleInfo(
             machine_id=machine_id,
@@ -197,3 +197,26 @@ class Operation(object):
         '''
         start_time = max(self.min_start_time, min_time)
         return self.schedule(machine_id, start_time)
+
+    def compare_machine_at_time(self, machine_1, machine_2, time: int):
+        from src.scheduling.instance.machine import Machine
+
+
+        cost1 = self.compute_cost(machine_1, time)
+        cost2 = self.compute_cost(machine_2, time)
+        return cost1 < cost2
+
+    def compute_cost(self, machine, time):
+        # Base operation cost
+        duration, energy = self._machine_info[machine.machine_id]
+        cost = energy
+
+        up_and_down_cost = machine._set_up_energy + machine._tear_down_energy
+        if not machine.scheduled_operations:
+            cost += up_and_down_cost
+        # Idle cost if there is a gap
+        elif machine.available_time < time:
+            idle_time = time - machine.available_time
+            cost += min(idle_time * machine._min_consumption, up_and_down_cost)
+        return cost
+

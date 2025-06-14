@@ -108,7 +108,8 @@ class Machine(object):
         """
         Stops the machine at time at_time.
         """
-        assert(self.available_time >= at_time, "Cannot stop machine before it's available")
+        assert self.available_time <= at_time
+        
                
         # Only stop if machine is running
         if not self._stop_times or len(self._start_times) > len(self._stop_times):
@@ -117,6 +118,9 @@ class Machine(object):
             # Add minimal consumption between last stop and end_time if needed
             if at_time < self._end_time:
                 self._current_energy += (self._end_time - at_time) * self._min_consumption
+        elif len(self._stop_times) >= 1 and self._stop_times[-1] > at_time:
+            self._current_energy -= (self._stop_times[-1] - at_time) * self._min_consumption
+            self._stop_times[-1] = at_time
 
     @property
     def working_time(self) -> int:

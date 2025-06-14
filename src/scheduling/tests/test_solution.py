@@ -7,6 +7,7 @@ import unittest
 import os
 
 from src.scheduling.instance.instance import Instance
+from src.scheduling.optim.constructive import Greedy, NonDeterminist
 from src.scheduling.solution import Solution
 from src.scheduling.tests.test_utils import TEST_FOLDER_DATA, TEST_FOLDER
 
@@ -113,6 +114,23 @@ class TestSolution(unittest.TestCase):
         val_obj = sol.objective
         self.assertEqual(val_eval, val_obj, "evaluate and objective must match")
         self.assertIsInstance(val_eval, int, "evaluate should return an integer")
+
+    def test_optim_greed(self):
+        inst = Instance.from_file(TEST_FOLDER_DATA + os.path.sep + "../../../../data/jsp5")
+        heur = Greedy()
+        sol = heur.run(inst)
+        plt = sol.gantt("tab20")
+        plt.savefig("gantt.png")
+        self.assertTrue(sol.is_feasible,"sould be feasible")
+
+        
+    def test_optim_non_det(self):
+        inst = Instance.from_file(TEST_FOLDER_DATA + os.path.sep + "../../../../data/jsp5")
+        heur = NonDeterminist()
+        sol = heur.run(inst)
+        plt = sol.gantt("tab20")
+        plt.savefig("gantt.png")
+        self.assertTrue(sol.is_feasible,"sould be feasible")
 
 
 if __name__ == "__main__":

@@ -22,7 +22,7 @@ class Greedy(Heuristic):
         @param params: The parameters of your heuristic method if any as a
                dictionary. Implementation should provide default values in the function.
         '''
-        pass
+        self.solution = Solution
 
     def run(self, instance: Instance, params: Dict=dict()) -> Solution:
         '''
@@ -33,7 +33,36 @@ class Greedy(Heuristic):
         @param instance: the instance to solve
         @param params: the parameters for the run
         '''
-        pass
+        self.solution = Solution(instance)
+        all_operation = self.solution.all_operations
+        operation_in_order_of_execution = {}
+        max_nb_op = 0
+        for operation in all_operation:
+            if f"{len(operation._predecessors)}" in operation_in_order_of_execution:
+                operation_in_order_of_execution[f"{len(operation._predecessors)}"].append(operation)
+            else:
+                operation_in_order_of_execution[f"{len(operation._predecessors)}"] = [operation]
+            max_nb_op = max(max_nb_op, len(operation._predecessors))
+        list_ordered = []
+        for i in range(max_nb_op+1):
+            list_ordered = list_ordered + operation_in_order_of_execution[f"{i}"]
+            
+        
+        for operation in list_ordered:
+            operation
+            machine_to_schedule = None
+            min_start = operation.min_start_time
+            for machine in self.solution.inst.machines:
+                if machine_to_schedule == None:
+                    machine_to_schedule = machine
+                elif machine_to_schedule.available_time > min_start and machine.available_time < machine_to_schedule.available_time:
+                        machine_to_schedule = machine
+                elif (machine.available_time < min_start or machine.available_time < machine_to_schedule.available_time) and operation.compare_machine_at_time(machine, machine_to_schedule, min_start):
+                    machine_to_schedule = machine
+            self.solution.schedule(operation,machine_to_schedule)
+        for machine in self.solution.inst.machines:
+            machine.stop(machine.available_time)
+        return self.solution
 
 
 class NonDeterminist(Heuristic):
@@ -48,7 +77,7 @@ class NonDeterminist(Heuristic):
         @param params: The parameters of your heuristic method if any as a
                dictionary. Implementation should provide default values in the function.
         '''
-        raise "Not implemented error"
+        self.solution = Solution
 
     def run(self, instance: Instance, params: Dict=dict()) -> Solution:
         '''
@@ -59,7 +88,32 @@ class NonDeterminist(Heuristic):
         @param instance: the instance to solve
         @param params: the parameters for the run
         '''
-        raise "Not implemented error"
+        self.solution = Solution(instance)
+        all_operation = self.solution.all_operations
+        operation_in_order_of_execution = {}
+        max_nb_op = 0
+        nb_machine=len(self.solution.inst.machines)
+        for operation in all_operation:
+            if f"{len(operation._predecessors)}" in operation_in_order_of_execution:
+                operation_in_order_of_execution[f"{len(operation._predecessors)}"].append(operation)
+            else:
+                operation_in_order_of_execution[f"{len(operation._predecessors)}"] = [operation]
+            max_nb_op = max(max_nb_op, len(operation._predecessors))
+        is_solution = False
+        while not is_solution:
+            
+            for i in range(max_nb_op+1):
+                for operation in operation_in_order_of_execution[f"{i}"]:
+                    manchine_id = random.randint(0,nb_machine-1)
+                    self.solution.schedule(operation,self.solution.inst.machines[manchine_id])
+            if self.solution.is_feasible:
+                is_solution = True
+            else:
+                self.solution.reset()
+        
+        for machine in self.solution.inst.machines:
+            machine.stop(machine.available_time)
+        return self.solution
 
 
 if __name__ == "__main__":
