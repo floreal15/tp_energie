@@ -100,8 +100,9 @@ class NonDeterminist(Heuristic):
                 operation_in_order_of_execution[f"{len(operation._predecessors)}"] = [operation]
             max_nb_op = max(max_nb_op, len(operation._predecessors))
         is_solution = False
+        nb=0
         while not is_solution:
-            
+            nb = nb+1
             for i in range(max_nb_op+1):
                 for operation in operation_in_order_of_execution[f"{i}"]:
                     manchine_id = random.randint(0,nb_machine-1)
@@ -110,6 +111,8 @@ class NonDeterminist(Heuristic):
                 is_solution = True
             else:
                 self.solution.reset()
+            if nb == 1000:
+                return self.solution
         
         for machine in self.solution.inst.machines:
             machine.stop(machine.available_time)

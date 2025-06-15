@@ -10,6 +10,7 @@ from src.scheduling.instance.instance import Instance
 from src.scheduling.optim.constructive import Greedy, NonDeterminist
 from src.scheduling.solution import Solution
 from src.scheduling.tests.test_utils import TEST_FOLDER_DATA, TEST_FOLDER
+from src.scheduling.optim.neighborhoods import SwapNeighborhood, ShiftNeighborhood
 
 
 class TestSolution(unittest.TestCase):
@@ -123,7 +124,7 @@ class TestSolution(unittest.TestCase):
         plt.savefig("gantt.png")
         self.assertTrue(sol.is_feasible,"sould be feasible")
 
-        
+
     def test_optim_non_det(self):
         inst = Instance.from_file(TEST_FOLDER_DATA + os.path.sep + "../../../../data/jsp5")
         heur = NonDeterminist()
@@ -131,6 +132,26 @@ class TestSolution(unittest.TestCase):
         plt = sol.gantt("tab20")
         plt.savefig("gantt.png")
         self.assertTrue(sol.is_feasible,"sould be feasible")
+
+
+class TestNeighborhoods(unittest.TestCase):
+    def setUp(self):
+        self.inst = Instance.from_file(TEST_FOLDER_DATA + os.path.sep + "jsp1")
+        self.heur = NonDeterminist()
+        self.sol = self.heur.run(self.inst)
+
+    def test_swap_neighborhood(self):
+        neigh = SwapNeighborhood(self.inst)
+        neighbor_sol = neigh.best_neighbor(self.sol)
+        self.assertTrue(neighbor_sol.is_feasible, "SwapNeighborhood: neighbor should be feasible")
+        # Le voisin doit être au moins aussi bon ou meilleur
+        self.assertLessEqual(neighbor_sol.objective, self.sol.objective, "SwapNeighborhood: neighbor should not be worse than original")
+
+    def test_shift_neighborhood(self):
+        neigh = ShiftNeighborhood(self.inst)
+        neighbor_sol = neigh.best_neighbor(self.sol)
+        self.assertTrue(neighbor_sol.is_feasible, "ShiftNeighborhood: neighbor should be feasible")
+        self.assertLessEqual(neighbor_sol.objective, self.sol.objective, "ShiftNeighborhood: neighbor should not be worse than original")
 
 
 if __name__ == "__main__":

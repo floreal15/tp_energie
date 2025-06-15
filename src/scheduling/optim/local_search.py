@@ -1,5 +1,5 @@
 '''
-Heuristics that compute an initial solution and 
+Heuristics that compute an initial solution and
 then improve it.
 
 @author: Vassilissa Lehoux
@@ -24,26 +24,28 @@ class FirstNeighborLocalSearch(Heuristic):
     in its neighborhood.
     '''
 
-    def __init__(self, params: Dict=dict()):
+    def __init__(self, params: Dict = dict()):
         '''
         Constructor
-        @param params: The parameters of your heuristic method if any as a
-               dictionary. Implementation should provide default values in the function.
         '''
-        raise "Not implemented error"
+        self.params = params
 
-    def run(self, instance: Instance, InitClass, NeighborClass, params: Dict=dict()) -> Solution:
+    def run(self, instance: Instance, InitClass, NeighborClass, params: Dict = dict()) -> Solution:
         '''
         Compute a solution for the given instance.
-        Implementation should provide default values in the function
-        (the function will be evaluated with an empty dictionary).
-
-        @param instance: the instance to solve
-        @param InitClass: the class for the heuristic computing the initialization
-        @param NeighborClass: the class of neighborhood used in the vanilla local search
-        @param params: the parameters for the run
         '''
-        raise "Not implemented error"
+        # Initial solution
+        init_heur = InitClass()
+        current_solution = init_heur.run(instance)
+        neighborhood = NeighborClass(instance)
+        improved = True
+        while improved:
+            improved = False
+            neighbor = neighborhood.first_better_neighbor(current_solution)
+            if neighbor is not current_solution and neighbor.objective < current_solution.objective:
+                current_solution = neighbor
+                improved = True
+        return current_solution
 
 
 class BestNeighborLocalSearch(Heuristic):
@@ -57,26 +59,33 @@ class BestNeighborLocalSearch(Heuristic):
     in its neighborhood.
     '''
 
-    def __init__(self, params: Dict=dict()):
+    def __init__(self, params: Dict = dict()):
         '''
         Constructor
-        @param params: The parameters of your heuristic method if any as a
-               dictionary. Implementation should provide default values in the function.
         '''
-        raise "Not implemented error"
+        self.params = params
 
-    def run(self, instance: Instance, InitClass, NeighborClass, params: Dict=dict()) -> Solution:
+    def run(self, instance: Instance, InitClass, NeighborClass=None, params: Dict = dict()) -> Solution:
         '''
         Computes a solution for the given instance.
-        Implementation should provide default values in the function
-        (the function will be evaluated with an empty dictionary).
-
-        @param instance: the instance to solve
-        @param InitClass: the class for the heuristic computing the initialization
-        @param NeighborClass: the class of neighborhood used in the vanilla local search
-        @param params: the parameters for the run
         '''
-        raise "Not implemented error"
+        from src.scheduling.optim.neighborhoods import MyNeighborhood1, MyNeighborhood2
+        # Initial solution
+        init_heur = InitClass()
+        current_solution = init_heur.run(instance)
+        neighborhoods = [MyNeighborhood1(instance), MyNeighborhood2(instance)]
+        improved = True
+        while improved:
+            improved = False
+            best_neighbor = current_solution
+            for neighborhood in neighborhoods:
+                neighbor = neighborhood.best_neighbor(current_solution)
+                if neighbor is not current_solution and neighbor.objective < best_neighbor.objective:
+                    best_neighbor = neighbor
+            if best_neighbor is not current_solution:
+                current_solution = best_neighbor
+                improved = True
+        return current_solution
 
 
 if __name__ == "__main__":

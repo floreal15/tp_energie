@@ -10,7 +10,7 @@ from src.scheduling.instance.operation import Operation
 class Machine(object):
     '''
     Machine class.
-    When operations are scheduled on the machine, contains the relative information. 
+    When operations are scheduled on the machine, contains the relative information.
     '''
 
     def __init__(self, machine_id: int, set_up_time: int, set_up_energy: int, tear_down_time: int,
@@ -29,7 +29,7 @@ class Machine(object):
         self._tear_down_energy = tear_down_energy
         self._min_consumption = min_consumption
         self._end_time = end_time
-        
+
         # Scheduling state
         self._scheduled_operations = []
         self._start_times = []
@@ -86,7 +86,7 @@ class Machine(object):
         '''
         # Check if machine needs to be started
         actual_start = max(start_time, self.available_time)
-        
+
         # If machine is not running, we need to start it
         if not self._start_times or (self._stop_times and self._stop_times[-1] > self._start_times[-1]):
             # Machine is stopped, need to start it
@@ -94,23 +94,23 @@ class Machine(object):
             self._start_times.append(machine_start_time)
             self._current_energy += self._set_up_energy
             actual_start = machine_start_time + self._set_up_time
-        
+
         # Schedule the operation
         if not operation.schedule(self.machine_id, actual_start):
             return -1  # Scheduling failed
-            
+
         self._scheduled_operations.append(operation)
         self._current_energy += operation.energy
-        
+
         return actual_start
-  
+
     def stop(self, at_time):
         """
         Stops the machine at time at_time.
         """
         assert self.available_time <= at_time
-        
-               
+
+
         # Only stop if machine is running
         if not self._stop_times or len(self._start_times) > len(self._stop_times):
             self._stop_times.append(at_time)
